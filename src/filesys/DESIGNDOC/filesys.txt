@@ -16,9 +16,15 @@ Joowon Han <cony717@kaist.ac.kr>
 >> If you have any preliminary comments on your submission, notes for the
 >> TAs, or extra credit, please give them here.
 
+None
+
+
 >> Please cite any offline or online sources you consulted while
 >> preparing your submission, other than the Pintos documentation, course
 >> text, lecture notes, and course staff.
+
+None
+
 
 		     INDEXED AND EXTENSIBLE FILES
 		     ============================
@@ -29,13 +35,40 @@ Joowon Han <cony717@kaist.ac.kr>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+inode.c
+- struct inode_disk: added indirect_block_sec and double_indirect_block_sec
+	block_sector_t indirect_block_sec: stores the sector number of single indirect block
+	block_sector_t double_indirect_block_sec: stores the sector number of
+	double indirect block
+
+- struct indirect_inode_disk: contains the indirect_map_table array
+	block_sector_t indirect_map_table: an array storing the sector numbers pointing to
+	indirectly referenced blocks
+
+- static struct lock inode_lock: added for synchronization
+
+
 >> A2: What is the maximum size of a file supported by your inode
 >> structure?  Show your work.
+
+124 direct blocks + 128 indirect blocks + 128*128 doubly indirect blocks
+= 16,636 blocks
+
+16,636 blocks * 512 bytes = 8,517,632 bytes
+= approximately 8.5 MB
+
 
 ---- SYNCHRONIZATION ----
 
 >> A3: Explain how your code avoids a race if two processes attempt to
 >> extend a file at the same time.
+
+We added a global lock (inode_lock) to inode.c, which is initialized in
+the inode_init function. When a process attempts to extend a file,
+it first acquires this lock and holds it until extension is complete.
+Thus, another process trying to extend a file has to wait until the lock
+is released and become available again.
+
 
 >> A4: Suppose processes A and B both have file F open, both
 >> positioned at end-of-file.  If A reads and B writes F at the same
@@ -51,6 +84,9 @@ Joowon Han <cony717@kaist.ac.kr>
 >> processes writing to a file cannot prevent another process forever
 >> from reading the file.
 
+
+
+
 ---- RATIONALE ----
 
 >> A6: Is your inode structure a multilevel index?  If so, why did you
@@ -58,6 +94,13 @@ Joowon Han <cony717@kaist.ac.kr>
 >> indirect blocks?  If not, why did you choose an alternative inode
 >> structure, and what advantages and disadvantages does your
 >> structure have, compared to a multilevel index?
+
+Our inode structure uses all three of direct/indirect/doubly indirect
+blocks. This is because we have to store metadata for large files (~8 MB)
+in an 512-byte block. The use of 128 indirect blocks and 128*128 doubly
+indirect blocks enables a single inode disk to contain metadata about
+data ranging for approximately 8 MB.
+
 
 			    SUBDIRECTORIES
 			    ==============
@@ -99,14 +142,40 @@ Joowon Han <cony717@kaist.ac.kr>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+cache.h / cache.c
+- struct buffer_head: data structure to keep track of buffered data.
+
+- static struct lock cache_lock: lock to prevent race conditions when
+updating the buffer.
+
+- static struct list buffer_head_table: a list consisting of 64 buffer heads.
+
+
 ---- ALGORITHMS ----
 
 >> C2: Describe how your cache replacement algorithm chooses a cache
 >> block to evict.
 
+We use the clock algorithm for block eviction. Each buffer_head entry
+has an access flag, which indicates whether the entry was recently accessed
+or not. When choosing the block to evict, the cursor iterates circularly
+through the list; recently accessed blocks are given a second chance.
+
+
 >> C3: Describe your implementation of write-behind.
 
+The write-behind is implemented by using the cache_flush_entry() and
+cache_flush_all_entries() functions. When the cache terminates, the
+flushing function is called so that dirty(modified) blocks can be
+flushed into the actual memory.
+
+
 >> C4: Describe your implementation of read-ahead.
+
+The blocks are evicted lazily when there is need for additional cache space.
+Otherwise, the cached data stay pre-loaded in the cache, and are indexed
+by the sector number held by a corresponding buffer_head structure.
+
 
 ---- SYNCHRONIZATION ----
 
@@ -114,13 +183,35 @@ Joowon Han <cony717@kaist.ac.kr>
 >> buffer cache block, how are other processes prevented from evicting
 >> that block?
 
+The buffer_head structure has in_use, a boolean value, which indicates
+whether or not the corresponding memory block is currently in used.
+If this value is set to true, the block is not evicted.
+
+
 >> C6: During the eviction of a block from the cache, how are other
 >> processes prevented from attempting to access the block?
+
+cache_lock, a static lock, ensures that only a single process accesses the
+cache at a single point.
+
 
 ---- RATIONALE ----
 
 >> C7: Describe a file workload likely to benefit from buffer caching,
 >> and workloads likely to benefit from read-ahead and write-behind.
+
+Workloads that frequently access the same file over a short period of
+time is likely to benefit from buffer caching, as it will save the time
+used to reload the files everytime they are accessed.
+
+Read-ahead is likely to benefit workloads that rapidly alternate between
+multiple different files, as reading ahead will reduce the time interval
+between file to file.
+
+Write-behind is likely to help workloads that make frequent modifications
+to multiple files. Instead of performing costly I/O everytime a file is
+modified, the files are saved lazily at once.
+
 
 			   SURVEY QUESTIONS
 			   ================
