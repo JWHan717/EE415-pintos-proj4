@@ -12,7 +12,7 @@
 
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
-#define DIRECT_BLOCK_ENTRIES 124
+#define DIRECT_BLOCK_ENTRIES 123
 #define INDIRECT_BLOCK_ENTRIES 128
 
 static struct lock inode_lock;
@@ -26,6 +26,7 @@ struct inode_disk
     block_sector_t direct_map_table[DIRECT_BLOCK_ENTRIES];
     block_sector_t indirect_block_sec;
     block_sector_t double_indirect_block_sec;
+    int is_dir;
   };
 
 struct indirect_inode_disk {
@@ -144,6 +145,7 @@ inode_create (block_sector_t sector, off_t length)
     {
       disk_inode->length = length;
       disk_inode->magic = INODE_MAGIC;
+      disk_inode->is_dir = 0;
       
       if(inode_allocate(disk_inode, disk_inode->length)) {
         cache_write(sector, disk_inode, 0);
@@ -156,6 +158,9 @@ inode_create (block_sector_t sector, off_t length)
 
 bool inode_allocate_indirect(block_sector_t *sector, size_t sectors, int depth) {
   char empty_block[BLOCK_SECTOR_SIZE];
+  for (int j=0;j<BLOCK_SECTOR_SIZE;j++){
+    empty_block[j] = 0;
+  }
 
   ASSERT(depth <= 2);
 
@@ -511,4 +516,15 @@ off_t
 inode_length (const struct inode *inode)
 {
   return inode->data.length;
+}
+
+bool
+inode_isdir (const struct inode *inode)
+{
+  return inode->data.is_dir;
+}
+
+void inode_setdir (struct inode *inode, int flag)
+{
+  inode->data.is_dir = flag;
 }
