@@ -77,6 +77,13 @@ is released and become available again.
 >> nonzero data, A is not allowed to see all zeros.  Explain how your
 >> code avoids this race.
 
+The buffer cache implementation helps prevent the race between two
+processing reading and writing at the same time. Since actual modifications
+are flushed when the cache is evicted or the file is closed, two different
+buffer cache blocks will hold information for each of the processes
+and ensure the the original file is modified in proper order.
+
+
 >> A5: Explain how your synchronization design provides "fairness".
 >> File access is "fair" if readers cannot indefinitely block writers
 >> or vice versa.  That is, many processes reading from a file cannot
@@ -84,7 +91,10 @@ is released and become available again.
 >> processes writing to a file cannot prevent another process forever
 >> from reading the file.
 
-
+The lock for synchronization is used only when a file is being extended.
+Combined with the buffer cache, this synchronization design provides
+chances for processes to interrupt each other without corrupting the
+crucial data.
 
 
 ---- RATIONALE ----
