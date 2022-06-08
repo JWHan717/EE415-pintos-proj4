@@ -9,6 +9,7 @@
 >> Fill in the names and email addresses of your group members.
 
 Joowon Han <cony717@kaist.ac.kr>
+Seoyoung Hwang <hsyng@kaist.ac.kr>
 
 
 ---- PRELIMINARIES ----
@@ -121,8 +122,8 @@ data ranging for approximately 8 MB.
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-bool dir_empty (struct dir *);
-struct dir *dir_parse (const char *name, char **save_name);
+bool dir_empty (struct dir *) : check dir is empty or not
+struct dir *dir_parse (const char *name, char **save_name) : parse path
 
 bool inode_isdir (const struct inode *);
 void inode_setdir (struct inode *, int flag);
@@ -133,13 +134,18 @@ bool readdir(int fd, char *name);
 bool isdir(int fd);
 int inumber(int fd);
 
+struct thread - struct dir *curdir : current directory
+struct inode_disk - int is_dir : directory flag
 
 ---- ALGORITHMS ----
 
 >> B2: Describe your code for traversing a user-specified path.  How
 >> do traversals of absolute and relative paths differ?
 
-we used strtok_r function.
+we used strtok_r function to traversing path.
+First, open root directory for absolute path
+and open current directory for relative path.
+And then start to traverse remaining path.
 
 ---- SYNCHRONIZATION ----
 
@@ -148,14 +154,16 @@ we used strtok_r function.
 >> should succeed, as should only one of two simultaneous attempts to
 >> create a file with the same name, and so on.
 
-We first lookup directory.
+We first lookup directory so that check the file name is existing or not.
 
 >> B5: Does your implementation allow a directory to be removed if it
 >> is open by a process or if it is in use as a process's current
 >> working directory?  If so, what happens to that process's future
 >> file system operations?  If not, how do you prevent it?
 
-We allowed it.
+We allowed to remove directory when it is empty 
+regardingless of whether opened or not.
+Process may fail to parse absolute path or add file to removed dir.
 
 ---- RATIONALE ----
 
