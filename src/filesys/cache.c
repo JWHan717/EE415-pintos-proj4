@@ -26,8 +26,7 @@ void cache_init(void) {
     }
 }
 
-void cache_read (block_sector_t sector_idx, void *buffer, off_t bytes_read,
-                int chunk_size, int sector_ofs) {
+void cache_read (block_sector_t sector_idx, void *buffer, off_t bytes_read) {
     lock_acquire(&cache_lock);
     
     struct buffer_head *b = cache_lookup(sector_idx);
@@ -45,8 +44,7 @@ void cache_read (block_sector_t sector_idx, void *buffer, off_t bytes_read,
     lock_release(&cache_lock);
 }
 
-void cache_write (block_sector_t sector_idx, void *buffer, off_t bytes_written,
-                 int chunk_size, int sector_ofs) {
+void cache_write (block_sector_t sector_idx, void *buffer, off_t bytes_written) {
     lock_acquire(&cache_lock);
 
     struct buffer_head *b = cache_lookup(sector_idx);
@@ -128,5 +126,6 @@ void cache_flush_all_entries (void) {
         if(!b->in_use) continue;
         cache_flush_entry(b);
     }
+    lock_release(&cache_lock);
 }
 
