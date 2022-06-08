@@ -121,10 +121,25 @@ data ranging for approximately 8 MB.
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+bool dir_empty (struct dir *);
+struct dir *dir_parse (const char *name, char **save_name);
+
+bool inode_isdir (const struct inode *);
+void inode_setdir (struct inode *, int flag);
+
+bool chdir(const char *);
+bool mkdir(const char *);
+bool readdir(int fd, char *name);
+bool isdir(int fd);
+int inumber(int fd);
+
+
 ---- ALGORITHMS ----
 
 >> B2: Describe your code for traversing a user-specified path.  How
 >> do traversals of absolute and relative paths differ?
+
+we used strtok_r function.
 
 ---- SYNCHRONIZATION ----
 
@@ -133,15 +148,22 @@ data ranging for approximately 8 MB.
 >> should succeed, as should only one of two simultaneous attempts to
 >> create a file with the same name, and so on.
 
+We first lookup directory.
+
 >> B5: Does your implementation allow a directory to be removed if it
 >> is open by a process or if it is in use as a process's current
 >> working directory?  If so, what happens to that process's future
 >> file system operations?  If not, how do you prevent it?
 
+We allowed it.
+
 ---- RATIONALE ----
 
 >> B6: Explain why you chose to represent the current directory of a
 >> process the way you did.
+
+We add current directory to thread structure .
+It is simple and easy to access.
 
 			     BUFFER CACHE
 			     ============
